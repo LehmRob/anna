@@ -1,0 +1,19 @@
+<html>
+<head>
+    <title>Ergebniss</title>
+</head>
+<body>
+    <table style="width:100%">
+        <tr>
+            <th>Name</th>
+            <th>Address</th> 
+            <th>ZipCode</th>
+            <th>City</th>
+        </tr>
+        {{range .}}<tr><td>{{.Name}}</td><td>{{.Address}}</td><td>{{.ZipCode}}</td><td>{{.City}}</td>{{end}}
+    </table>
+    <form method="get" action="/">
+        <button type="submit">Zurück zum Start</button>
+    </form>
+</body>
+</html>
