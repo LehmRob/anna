@@ -3,17 +3,43 @@
     <title>Ergebniss</title>
 </head>
 <body>
-    <table style="width:100%">
+    <link href="static/css/bootstrap.min.css" rel="stylesheet">
+    {{range .}}
+    <h2>Postleitzahl: {{.ZipCode}}</h2>
+    <table class="table table-striped">
         <tr>
             <th>Name</th>
-            <th>Address</th> 
-            <th>ZipCode</th>
-            <th>City</th>
+            <th>Adresse</th>
+            <th>Postleitzahl</th>
+            <th>Stadt</th>
+            <th>Geburtstag</th>
+            <th>Eintrittsdatum</th>
+            <th>Austrittsdatum</th>
+            <th>Einrichtung</th>
+            <th>Betreuungsdauer</th>
         </tr>
-        {{range .}}<tr><td>{{.Name}}</td><td>{{.Address}}</td><td>{{.ZipCode}}</td><td>{{.City}}</td>{{end}}
+        {{range .Childreen}}<tr>
+            <td>{{.Name}}</td>
+            <td>{{.Address}}</td>
+            <td>{{.ZipCode}}</td>
+            <td>{{.City}}</td>
+            <td>{{.Birthdate}}</td>
+            <td>{{.AdmissionDate}}</td>
+            <td>{{.DischargeDate}}</td>
+            <td>{{.Category}}</td>
+            <td>{{.Duration}}</td>
+        </tr>{{end}}
     </table>
-    <form method="get" action="/">
-        <button type="submit">Zurück zum Start</button>
+    <form action="/export.csv" method="post">
+        <div class="form-group">
+            <input type="hidden" name="zip" value="{{.ZipCode}}">
+            <button type="submit" class="btn btn-default">Exportieren</button>
+        </div>
     </form>
+    {{end}}
+    <form method="get" action="/">
+        <button type="submit" class="btn btn-default">Zurück zum Start</button>
+    </form>
+    <script src="static/js/bootstrap.min.js"></script>
 </body>
 </html>

@@ -3,10 +3,19 @@
     <title>Upload</title>
 </head>
 <body>
+    <div>
+    <link href="static/css/bootstrap.min.css" rel="stylesheet">
     <form action="/upload" method="post" enctype="multipart/form-data">
-        <label for="file">Filename:</label>
-        <input type="file" name="file" id="file">
-        <input type="submit" name="submit" value="Submit">
+        <div class="form-group">
+            <label for="file">CSV-Datei:</label>
+            <input type="file" name="file" id="file">
+            <p class="help-block">CSV Datei die analysiert werden soll</p>
+        </div>
+        <div class="form-group">
+            <button type="submit" class="btn btn-default">Hochladen</button>
+        </div>
     </form>
+    </div>
+    <script src="static/js/bootstrap.min.js"></script>
 </body>
 </html>
