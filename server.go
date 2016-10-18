@@ -11,16 +11,16 @@ import (
 )
 
 const (
-	upload = "upload.html"
-	result = "result.html"
-
-	maxMemory = 6 * 1024 * 1024
+	upload    = "upload.html"
+	result    = "result.html"
+	bootstrap = "bootstrap"
 )
 
 // AnnaServer holds important structure for the server
 type AnnaServer struct {
 	server     *http.Server
 	webrootDir string
+	group      []ZipCodeGroup
 }
 
 // NewServer creates a new instance of AnnaServer
@@ -34,6 +34,10 @@ func NewServer(port string) (*AnnaServer, error) {
 	anna.webrootDir = filepath.Join(curDir, "webroot")
 
 	mux := http.NewServeMux()
+
+	mux.Handle("/static/", http.StripPrefix("/static", http.FileServer(http.Dir(filepath.Join(anna.webrootDir,
+		"static", bootstrap)))))
+
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		anna.showIndex(w, r)
 	})
@@ -42,6 +46,10 @@ func NewServer(port string) (*AnnaServer, error) {
 	})
 	mux.HandleFunc("/result", func(w http.ResponseWriter, r *http.Request) {
 		anna.showResult(w, r)
+	})
+
+	mux.HandleFunc("/export.csv", func(w http.ResponseWriter, r *http.Request) {
+		anna.export(w, r)
 	})
 
 	anna.server = &http.Server{
@@ -67,8 +75,11 @@ func (a *AnnaServer) showIndex(w http.ResponseWriter, r *http.Request) {
 
 func (a *AnnaServer) upload(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
-		fmt.Fprintf(w, "Please goto /")
+		http.Redirect(w, r, "/", 302)
+		return
 	}
+
+	log.Println("Get new upload")
 
 	file, header, err := r.FormFile("file")
 	if err != nil {
@@ -99,12 +110,13 @@ func (a *AnnaServer) upload(w http.ResponseWriter, r *http.Request) {
 
 func (a *AnnaServer) showResult(w http.ResponseWriter, r *http.Request) {
 	analyzer := NewCsvAnalyzer("/tmp/data.csv")
-	results, err := analyzer.Analyze()
+	zipCodeGroups, err := analyzer.Analyze()
 	if err != nil {
 		log.Println(err.Error())
 		fmt.Fprintf(w, "Error occured")
 		return
 	}
+	a.group = zipCodeGroups
 
 	tmpl, err := template.ParseFiles(filepath.Join(a.webrootDir, result))
 	if err != nil {
@@ -113,7 +125,43 @@ func (a *AnnaServer) showResult(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tmpl.Execute(w, results)
+	tmpl.Execute(w, zipCodeGroups)
+}
+
+func (a *AnnaServer) export(w http.ResponseWriter, r *http.Request) {
+	w.Header().Add("Content-Dispostion", "inline; filename=\"data.csv\"")
+	w.Header().Add("Content-Type", "text/comma-separated-values")
+
+	zipCode := r.FormValue("zip")
+	log.Printf("Export file for zip code %s", zipCode)
+
+	if a.group == nil {
+		log.Printf("No data analyzed. Redirect to start")
+		http.Redirect(w, r, "/", 302)
+		return
+	}
+
+	for _, zipCodeGroup := range a.group {
+		if zipCodeGroup.ZipCode == zipCode {
+			err := zipCodeGroup.writeCsv()
+			if err != nil {
+				log.Println(err.Error())
+				fmt.Fprintf(w, "Error occured")
+				return
+			}
+			break
+		}
+	}
+
+	f, err := os.Open(filepath.Join("/tmp", zipCode+".csv"))
+	if err != nil {
+		log.Println(err.Error())
+		fmt.Fprintf(w, "Error occured")
+		return
+	}
+	defer f.Close()
+
+	io.Copy(w, f)
 }
 
 // Run runs the server and returns only if an error occurs
