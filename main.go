@@ -6,7 +6,7 @@ import (
 
 func main() {
 	log.Println("Starting WebApp")
-	a, err := NewServer(":8080")
+	a, err := NewServer(":443")
 	if err != nil {
 		log.Fatal(err)
 	}

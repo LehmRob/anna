@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"fmt"
 	"html/template"
 	"io"
@@ -8,6 +9,8 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+
+	"rsc.io/letsencrypt"
 )
 
 const (
@@ -52,9 +55,17 @@ func NewServer(port string) (*AnnaServer, error) {
 		anna.export(w, r)
 	})
 
+	var m letsencrypt.Manager
+	if err := m.CacheFile("letsencrypt.cache"); err != nil {
+		log.Fatal(err)
+	}
+
 	anna.server = &http.Server{
 		Addr:    port,
 		Handler: mux,
+		TLSConfig: &tls.Config{
+			GetCertificate: m.GetCertificate,
+		},
 	}
 
 	return anna, nil
@@ -166,5 +177,5 @@ func (a *AnnaServer) export(w http.ResponseWriter, r *http.Request) {
 
 // Run runs the server and returns only if an error occurs
 func (a *AnnaServer) Run() error {
-	return a.server.ListenAndServe()
+	return a.server.ListenAndServeTLS("", "")
 }
